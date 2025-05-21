@@ -3,11 +3,12 @@ using UnityEngine.UI;
 using Unity.Robotics.ROSTCPConnector;
 using RosMessageTypes.Std;
 using UnityEngine.SceneManagement;
+using TMPro;
 
 public class ChatterSubscriber : MonoBehaviour
 {
     ROSConnection ros;
-    public Text chatterText; // UI Text element to display messages
+    public TMP_Text chatterText; // UI Text element to display messages
 
     void Start()
     {
