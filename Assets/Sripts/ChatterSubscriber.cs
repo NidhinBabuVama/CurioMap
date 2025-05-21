@@ -17,6 +17,9 @@ public class ChatterSubscriber : MonoBehaviour
 
     private string launchFilePath = "/home/susheel/simulation/src/curio_one/launch/rtabmap.launch.py";
 
+    [SerializeField] TMP_InputField InputField;
+    [SerializeField] GameObject mapNamePanel;
+
 
     void Start()
     {
@@ -44,18 +47,24 @@ public class ChatterSubscriber : MonoBehaviour
     //    SceneManager.LoadScene(0);
     //}
 
+    public void mapNamePanelEnable()
+    {
+        mapNamePanel.SetActive(true);
+    }
 
     public void MapLoad()
     {
+        mapNamePanel.SetActive(false);
         LaunchROS2File();
         SceneManager.LoadScene("Map");
     }
     void LaunchROS2File()
     {
+        string mapName = InputField.ToString();
         ProcessStartInfo startInfo = new ProcessStartInfo
         {
             FileName = "bash",
-            Arguments = $"-c \"source /opt/ros/humble/setup.bash && ros2 launch {launchFilePath}  use_sim_time:=true localization:=false database_path:=/home/susheel/simulation/1st_map.db\"",
+            Arguments = $"-c \"source /opt/ros/humble/setup.bash && ros2 launch {launchFilePath}  use_sim_time:=true localization:=false database_path:=/home/susheel/simulation/"+mapName+".db\"",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
