@@ -17,6 +17,13 @@ public class MapManager : MonoBehaviour
     private Texture2D mapTexture;
     [SerializeField] TMP_Text mapStatusText;
 
+    float mapResolution;
+    float mapWidth;
+    float mapHeight;
+    float lastMapOriginX;
+    float lastMapOriginY;
+
+
     ROSConnection ros;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -43,15 +50,16 @@ public class MapManager : MonoBehaviour
 
     void ReceiveTF(TFMessageMsg tfMsg)
     {
+        print("received TF");
         foreach (TransformStampedMsg transform in tfMsg.transforms)
         {
             string frameId = transform.child_frame_id;
             string childFrameId = transform.child_frame_id;
-
-        //  if (frameId == "odom")
+            Debug.Log($"TF: {frameId} -> {childFrameId}");
+            //  if (frameId == "odom")
             {
 
-                if ( childFrameId == "base_footprint")
+                if ( childFrameId == "base_link")
                 {
                     Vector3 Rposition = new Vector3(
                         (float)transform.transform.translation.x,
@@ -79,61 +87,86 @@ public class MapManager : MonoBehaviour
     }
     #endregion
 
+
     #region Map Size
 
     void ReceiveMap(OccupancyGridMsg message)
     {
-        // Convert OccupancyGrid message to a Texture2D
+        // Store values for positioning
+        mapResolution = (float)message.info.resolution;
+        mapWidth = message.info.width;
+        mapHeight = message.info.height;
+        lastMapOriginX = (float)message.info.origin.position.x;
+        lastMapOriginY = (float)message.info.origin.position.y;
+
+        // Create and display map
         mapTexture = CreateTextureFromMap(message);
-        // Update the existing map texture
         UpdateMapTexture(mapTexture);
+
         mapStatusText.text = "Map received and displayed.";
     }
+
 
     Texture2D CreateTextureFromMap(OccupancyGridMsg mapMessage)
     {
         int width = (int)mapMessage.info.width;
         int height = (int)mapMessage.info.height;
-
         sbyte[] sbyteData = mapMessage.data;
-        byte[] data = Array.ConvertAll(sbyteData, b => (byte)b);
 
-        // Initialize or update the texture
         if (mapTexture == null || mapTexture.width != width || mapTexture.height != height)
         {
-            mapTexture = new Texture2D(width, height);
+            mapTexture = new Texture2D(width, height, TextureFormat.RGBA32, false);
         }
 
         Color[] colors = new Color[width * height];
 
-        for (int i = 0; i < colors.Length; i++)
+        for (int i = 0; i < sbyteData.Length; i++)
         {
-            byte value = data[i];
-            colors[i] = value == 0 ? Color.white : (value == 100 ? Color.black : Color.gray);
+            int value = sbyteData[i];
+            colors[i] = value == 0 ? Color.white :
+                        value == 100 ? Color.black :
+                        Color.gray;
         }
 
         mapTexture.SetPixels(colors);
         mapTexture.Apply();
-
         return mapTexture;
     }
+
 
     void UpdateMapTexture(Texture2D texture)
     {
         if (mapRendSprite != null)
         {
-            Sprite mapSprite = Sprite.Create(texture,
+            float pixelsPerUnit = 1f / mapResolution;
+
+            Sprite mapSprite = Sprite.Create(
+                texture,
                 new Rect(0, 0, texture.width, texture.height),
-                new Vector2(0.5f, 0.5f), // pivot at center
-                100f); // pixels per unit, adjust as needed
+                new Vector2(0.5f, 0.5f),  // center pivot
+                pixelsPerUnit
+            );
 
             mapRendSprite.sprite = mapSprite;
+
+            // Calculate center position based on origin + half dimensions
+            Vector3 worldPosition = new Vector3(
+                lastMapOriginX + mapWidth * mapResolution / 2f,
+                lastMapOriginY + mapHeight * mapResolution / 2f,
+                0f
+            );
+
+            mapRendSprite.transform.position = worldPosition;
+            mapRendSprite.transform.localScale = Vector3.one;
         }
     }
 
 
-
     #endregion
+
+
+
+
 
 
 
