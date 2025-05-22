@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+
 public class ChatterSubscriber : MonoBehaviour
 {
     ROSConnection ros;
@@ -15,7 +16,7 @@ public class ChatterSubscriber : MonoBehaviour
 
     public TMP_Text outputText;
 
-    private string launchFilePath = "/home/susheel/simulation/src/curio_one/launch/rtabmap.launch.py";
+    private string launchFilePath = "/home/tech/simulation/src/curio_one/launch/rtabmap.launch.py";
 
     [SerializeField] TMP_InputField InputField;
     [SerializeField] GameObject mapNamePanel;
@@ -25,6 +26,13 @@ public class ChatterSubscriber : MonoBehaviour
     {
         ros = ROSConnection.instance;
         ros.Subscribe<StringMsg>("/face_data", ReceiveMessage);
+
+        ros = ROSConnection.GetOrCreateInstance();
+      //  LogToConsole("ROSConnection initialized.");
+
+        // Example: Subscribe to a topic
+     //   ros.Subscribe<std_msgs.String>("chatter", OnROSMessageReceived);
+
     }
 
     void ReceiveMessage(StringMsg message)
@@ -60,11 +68,12 @@ public class ChatterSubscriber : MonoBehaviour
     }
     void LaunchROS2File()
     {
-        string mapName = InputField.ToString();
+        string mapName = InputField.text;
+        print(mapName + " Map Name");
         ProcessStartInfo startInfo = new ProcessStartInfo
         {
             FileName = "bash",
-            Arguments = $"-c \"source /opt/ros/humble/setup.bash && ros2 launch {launchFilePath}  use_sim_time:=true localization:=false database_path:=/home/susheel/simulation/"+mapName+".db\"",
+            Arguments = $"-c \"source /opt/ros/humble/setup.bash && ros2 launch {launchFilePath}  use_sim_time:=true localization:=false database_path:=/home/tech/simulation/"+mapName+".db\"",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,

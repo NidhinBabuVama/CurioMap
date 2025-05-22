@@ -2,11 +2,15 @@ using RosMessageTypes.Geometry;
 using RosMessageTypes.Nav;
 using RosMessageTypes.Tf2;
 using System;
-using System.Net.Mail;
+using System.Diagnostics;
 using TMPro;
 using Unity.Robotics.ROSTCPConnector;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using static UnityEngine.Rendering.GPUSort;
+
+
 
 public class MapManager : MonoBehaviour
 {
@@ -22,6 +26,9 @@ public class MapManager : MonoBehaviour
     float mapHeight;
     float lastMapOriginX;
     float lastMapOriginY;
+
+    private Process rosProcess;
+
 
 
     ROSConnection ros;
@@ -50,12 +57,12 @@ public class MapManager : MonoBehaviour
 
     void ReceiveTF(TFMessageMsg tfMsg)
     {
-        print("received TF");
+      //  print("received TF");
         foreach (TransformStampedMsg transform in tfMsg.transforms)
         {
             string frameId = transform.child_frame_id;
             string childFrameId = transform.child_frame_id;
-            Debug.Log($"TF: {frameId} -> {childFrameId}");
+          //  Debug.Log($"TF: {frameId} -> {childFrameId}");
             //  if (frameId == "odom")
             {
 
@@ -78,8 +85,8 @@ public class MapManager : MonoBehaviour
                     );
                     robot.transform.rotation = Rrotation;
 
-                    Debug.Log($"TF: {frameId} -> {childFrameId}");
-                    Debug.Log($"  Position: {Rposition}");
+                  //  Debug.Log($"TF: {frameId} -> {childFrameId}");
+                  //  Debug.Log($"  Position: {Rposition}");
                   //  Debug.Log($"  Rotation: {Rrotation.eulerAngles}");
                 }
             }
@@ -164,10 +171,64 @@ public class MapManager : MonoBehaviour
 
     #endregion
 
+    #region Stop Backend Script
+    public void StopAndBacktoMain()
+    {
+        StopROS2Process();
+        SceneManager.LoadScene("FaceDectecting");
 
+    }
+    public void StopROS2Process()
+    {
+        //  string mapName = InputField.text;
+        //  print(mapName + " Map Name");
+        ProcessStartInfo startInfo = new ProcessStartInfo
+        {
+            FileName = "bash",
+            //Arguments = "-c \"pkill -f 'rtabmap'\"",
+            Arguments = $"-c \"/home/tech/simulation/src/curio_one/sh_files/stop_slam_toolbox.sh\"",
 
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
 
+        Process process = new Process { StartInfo = startInfo };
 
+        process.OutputDataReceived += (sender, args) =>
+        {
+            if (!string.IsNullOrEmpty(args.Data))
+            {
+                AppendToOutput(args.Data);
+            }
+        };
+
+        process.ErrorDataReceived += (sender, args) =>
+        {
+            if (!string.IsNullOrEmpty(args.Data))
+            {
+                AppendToOutput($"<color=red>{args.Data}</color>");
+            }
+        };
+
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+    }
+
+    private void AppendToOutput(string message)
+    {
+        if (mapStatusText != null)
+        {
+            mapStatusText.text += message + "\n";
+        }
+        else
+        {
+            UnityEngine.Debug.Log(message);
+        }
+    }
+    #endregion
 
 
 }
