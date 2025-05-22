@@ -228,6 +228,48 @@ public class MapManager : MonoBehaviour
             UnityEngine.Debug.Log(message);
         }
     }
+
+
+    public void launchNav()
+    {
+        print("launched");
+        string rosSetup = "source /opt/ros/humble/setup.bash";
+        string launchnavigation = "ros2 launch curio_one navigation_launch.py use_sim_time:=true";
+
+
+        ProcessStartInfo startInfo = new ProcessStartInfo
+        {
+            FileName = "bash",
+            Arguments = $"-c \"{rosSetup}&&{launchnavigation}\"",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+
+        Process process = new Process { StartInfo = startInfo };
+
+        process.OutputDataReceived += (sender, args) =>
+        {
+            if (!string.IsNullOrEmpty(args.Data))
+            {
+                AppendToOutput(args.Data);
+            }
+        };
+
+        process.ErrorDataReceived += (sender, args) =>
+        {
+            if (!string.IsNullOrEmpty(args.Data))
+            {
+                AppendToOutput($"<color=red>{args.Data}</color>");
+            }
+        };
+
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
+    }
     #endregion
 
 
